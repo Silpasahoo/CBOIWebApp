@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --cboi-blue: #0b3b60;
+    --cboi-blue-light: #0d4a7a;
+    --cboi-blue-dark: #082e4d;
+    --cboi-orange: #f08c00;
+    --cboi-orange-hover: #e07a00;
+  }
+  
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg rounded-2xl;
+  }
+  
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-sm border border-white/20 shadow-md rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .btn-primary {
+    @apply bg-[var(--cboi-blue)] hover:bg-[var(--cboi-blue-light)] text-white font-semibold py-2.5 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+
+  .btn-accent {
+    @apply bg-[var(--cboi-orange)] hover:bg-[var(--cboi-orange-hover)] text-white font-semibold py-2.5 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+  
+  .input-field {
+    @apply w-full bg-white/80 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-[var(--cboi-blue)] focus:border-[var(--cboi-blue)] block p-3 transition-colors;
+  }
+  
+  .form-label {
+    @apply block mb-2 text-sm font-medium text-gray-700 tracking-wide;
+  }
+}
