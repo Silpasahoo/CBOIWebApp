@@ -19,11 +19,15 @@ const Dashboard = () => {
   const [timeFilter, setTimeFilter] = useState('Today');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Dashboard Stats State
+  const [stats, setStats] = useState({ count: 0, amount: 0 });
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState(null);
+
   useEffect(() => {
     if (auth.isLoading) return;
 
     const authMobile = localStorage.getItem('authMobile');
-
     const username = auth.user?.profile?.preferred_username || authMobile;
 
     if (username) {
@@ -31,6 +35,66 @@ const Dashboard = () => {
       fetchMerchantData(type, username);
     }
   }, [auth.user, auth.isLoading]);
+
+  // Fetch stats whenever selectedMerchant or timeFilter changes
+  useEffect(() => {
+    if (selectedMerchant) {
+      fetchDashboardStats();
+    }
+  }, [selectedMerchant, timeFilter]);
+
+  const fetchDashboardStats = async () => {
+    if (!selectedMerchant) return;
+    
+    setStatsLoading(true);
+    setStatsError(null);
+
+    try {
+      // Prepare dates in DD/MM/YYYY format
+      const today = new Date();
+      let queryStart, queryEnd;
+
+      if (timeFilter === 'Today') {
+        const todayStr = `${String(today.getUTCDate()).padStart(2, '0')}/${String(today.getUTCMonth() + 1).padStart(2, '0')}/${today.getUTCFullYear()}`;
+        queryStart = todayStr;
+        queryEnd = todayStr;
+      } else if (timeFilter === 'Yesterday') {
+        const yesterday = new Date(today);
+        yesterday.setUTCDate(today.getUTCDate() - 1);
+        const yesterdayStr = `${String(yesterday.getUTCDate()).padStart(2, '0')}/${String(yesterday.getUTCMonth() + 1).padStart(2, '0')}/${yesterday.getUTCFullYear()}`;
+        queryStart = yesterdayStr;
+        queryEnd = yesterdayStr;
+      }
+
+      console.log(`Fetching dashboard stats for ${timeFilter} (${queryStart} to ${queryEnd})`);
+
+      const payload = {
+        vpa_id: selectedMerchant.vpa_id,
+        startDate: queryStart,
+        endDate: queryEnd,
+        mode: "both"
+      };
+
+      // Call Transaction Report API for stats
+      const response = await axios.post(API_URLS.TRANSACTION_REPORT, payload);
+      
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        const txns = response.data.data;
+        const totalCount = txns.length;
+        const totalAmount = txns.reduce((sum, txn) => sum + Number(txn.Transaction_Amount || 0), 0);
+        
+        setStats({ count: totalCount, amount: totalAmount });
+      } else {
+        setStats({ count: 0, amount: 0 });
+      }
+    } catch (error) {
+      console.error('Fetch Stats Error:', error);
+      setStatsError('Failed to fetch stats');
+      setStats({ count: 0, amount: 0 });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   const fetchMerchantData = async (type, value) => {
     if (!value) return;
@@ -202,7 +266,12 @@ const Dashboard = () => {
           </div>
 
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative">
+            {statsLoading && (
+              <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-lg">
+                <svg className="animate-spin h-6 w-6 text-blue-600" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              </div>
+            )}
 
             {/* Total No Of Transaction */}
             <div className="bg-white border border-gray-200 rounded-lg p-5 flex items-center justify-between shadow-sm">
@@ -214,7 +283,9 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm text-gray-600 font-normal">Total No Of Transaction</span>
               </div>
-              <span className="text-[22px] font-bold text-gray-900">20.7K</span>
+              <span className="text-[22px] font-bold text-gray-900">
+                {stats.count > 999 ? (stats.count / 1000).toFixed(1) + 'K' : stats.count}
+              </span>
             </div>
 
             {/* Total Amount */}
@@ -227,7 +298,9 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm text-gray-600 font-normal">Total Amount</span>
               </div>
-              <span className="text-[22px] font-bold text-gray-900">76,000 cr</span>
+              <span className="text-[22px] font-bold text-gray-900">
+                {stats.amount.toLocaleString('en-IN')} <span className="text-sm font-normal text-gray-500">cr</span>
+              </span>
             </div>
 
           </div>
